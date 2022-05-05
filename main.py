@@ -1,4 +1,3 @@
-import itertools
 import os
 import sys
 from pathlib import Path
@@ -8,102 +7,72 @@ def machine(input_path):
     with open(input_path) as file:
         input_data = [x.strip() for x in file.readlines()]
 
-    input_elements = input_data[0].split(',')
-    triggers = input_data[1].split(',')
-    acceptable = input_data[2].split(',')
-    initial = input_data[3]
+    input_symbols = input_data[0].split('|')
+    acceptable = input_data[4]
+    initial_state = input_data[5]
+    initial_stack_sign = input_data[6]
+    graph = {k: v for k, v in [state.split('->') for state in input_data[7:]]}
 
-    graph = {k: v for k, v in [state.split('->') for state in input_data[4:]]}
-    visited = depth_first_search(graph, initial, set(), triggers)
+    init = '|'.join([f'{initial_state}#{initial_stack_sign}'])
+    solution_all = []
 
-    state_groups = [[el for el in input_elements if el in acceptable],
-                    [el for el in input_elements if el not in acceptable]]
+    for in_symbol in input_symbols:
+        in_symbol = in_symbol.replace(',', '')
+        stack_sign = initial_stack_sign
+        current_state = initial_state
+        solution = find_solution(in_symbol,
+                                 stack_sign,
+                                 current_state,
+                                 graph,
+                                 acceptable)
+        solution_all.append(init + solution)
+    return solution_all
 
+
+def find_solution(in_symbol, stack_sign, current_state, graph, acceptable):
+    solution = ''
     while True:
-        changed = False
-        for column_cnt, group in enumerate(state_groups):
-            for i in group:
-                first = True
-                _tmp = []
+        if not len(in_symbol) > 0:
+            return solution
 
-                for j in group[group.index(i):len(group)]:
+        stack_symbol = stack_sign[0] if len(stack_sign) > 1 else stack_sign
+        key = f'{current_state},{in_symbol[0]},{stack_symbol}'
+        empty_state = f'{(split := key.split(","))[0]},$,{split[2]}'
 
-                    for trigger in triggers:
-                        a = graph.get(f'{i},{trigger}')
-                        b = graph.get(f'{j},{trigger}')
+        if key in graph or empty_state in graph:
 
-                        if a != b:
-                            if not any([a in state_group
-                                        and b in state_group
-                                        for state_group in state_groups]):
-                                changed = True
-                                state = j if i < j else i
-                                _tmp.append(state)
-                                group.remove(state)
-                                if first:
-                                    state_groups.append(_tmp)
-                                    first = False
-                                break
-            column_cnt += 1
+            if in_symbol == '$' and current_state in acceptable:
+                return solution + '|1'
 
-        if not changed:
-            break
+            value = graph.get(key) or graph.get(empty_state)
 
-    state_groups = sorted(state_groups)
-    konLista = [el[0] for el in state_groups if el]
+            q_state = value.split(',')
+            stack_sign = stack_sign[1:]
+            stack_sign = q_state[1] + stack_sign
 
-    parsed_dict = {states: collection[0]
-                   for collection in state_groups
-                   if collection
-                   for states in collection[1:]}
-    konDict = {}
+            if stack_sign[0] == '$':
+                stack_sign = stack_sign.replace('$', '')
+                stack_sign = '$' if not stack_sign else stack_sign
 
-    for key in graph:
-        if key.split(',')[0] not in parsed_dict:
-            if graph.get(key) in parsed_dict:
-                konDict[key] = parsed_dict.get(graph.get(key))
-            else:
-                konDict[key] = graph.get(key)
+            current_state = q_state[0]
 
-    konLista = [x for x in konLista if x in visited]
+            in_symbol = in_symbol[1:] if key in graph else in_symbol
+            in_symbol = '$' if not in_symbol else in_symbol
+            solution += f'|{current_state}#{stack_sign}'
 
-    acceptable = [x for x in acceptable
-                  if x not in [k.split(',')[0] for k in parsed_dict.keys()]
-                  and x in visited]
-
-    if initial in parsed_dict:
-        initial = parsed_dict.get(initial)
-
-    ret_stuff = [','.join(konLista),
-                 ','.join(triggers),
-                 ','.join(acceptable),
-                 initial]
-
-    for key in konDict:
-        if key.split(',')[0] in visited:
-            ret_stuff.append(f'{key}->{konDict.get(key)}')
-
-    return ret_stuff
-
-
-def depth_first_search(graph, start_node, visited, triggers):
-    visited.add(start_node)
-
-    keys = [f'{x[0]},{x[1]}'
-            for x in list(itertools.product([start_node], triggers))]
-    nodes = set([graph.get(k) for k in keys])
-
-    for next_ in nodes - visited:
-        depth_first_search(graph, next_, visited, triggers)
-    return visited
+        elif in_symbol == '$':
+            solution += '|1' if current_state in acceptable else '|0'
+            return solution
+        else:
+            return solution + '|fail|0'
 
 
 def main():
     test_dir = Path(__file__).parent.resolve() / 'tests'
     for test in sorted(os.listdir(test_dir)):
         path_test = test_dir / test
-        input_path = path_test / 't.ul'
-        output_path = path_test / 't.iz'
+        input_path = path_test / 'primjer.in'
+        output_path = path_test / 'primjer.out'
         machine_solution = machine(input_path)
         with open(output_path) as file:
             expected_solution = [x.strip() for x in file.readlines()]
