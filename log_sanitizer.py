@@ -11,6 +11,9 @@ def main():
 
     # time zone info is the same everywhere, remove it (decluster)
     in_file = [x.replace(' -0700]', ']') for x in in_file]
+    in_file = [x[:x.index(' "Wget')] if ' "Wget' in x
+               else x
+               for x in in_file]
 
     # split into collection of "(IP, rest of data)"
     in_file = [x.split(' - - ') for x in in_file]
