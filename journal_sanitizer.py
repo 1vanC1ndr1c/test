@@ -1,3 +1,4 @@
+import datetime
 import sys
 
 
@@ -10,7 +11,16 @@ def main():
     in_file = [x.split('|') for x in in_file]
 
     # get only date, name, modification info
-    in_file = [(x[3], x[1], x[4]) for x in in_file]
+    in_file = [(datetime.datetime.strptime(x[3][:-2], '%Y-%m-%d %H:%M:%S.%f'),
+                x[1],
+                x[4])
+               for x in in_file]
+    # correct time zone
+    in_file = [(date - datetime.timedelta(hours=7), n, i)
+               for date, n, i in in_file]
+    # back to string
+    in_file = [(date.isoformat().replace('T', ' '), n, i)
+               for date, n, i in in_file]
 
     # find all created files
     print(f'CREATED {"=" * 100}')
