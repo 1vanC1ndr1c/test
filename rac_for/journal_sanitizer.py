@@ -21,7 +21,8 @@ def main():
     # back to string
     in_file = [(date.isoformat().replace('T', ' '), n, i)
                for date, n, i in in_file]
-
+    in_file = [(date[:date.index('.')], n, i)
+               for date, n, i in in_file]
     # find all created files
     print(f'CREATED {"=" * 100}')
     # format the output as "date - name"
@@ -45,3 +46,6 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+
+
+
