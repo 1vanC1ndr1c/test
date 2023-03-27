@@ -1,3 +1,4 @@
+import datetime
 import os
 import random
 import sys
@@ -12,9 +13,20 @@ def main():
 
     era_file_path = [str(era) for era in os.listdir(downloads_dir)
                      if str(era).startswith('ERA')][0]
-
     era_file_path = downloads_dir / era_file_path
 
+    modify_file(era_file_path)
+
+    rename_file(era_file_path, downloads_dir)
+
+
+def rename_file(era_file_path, downloads_dir):
+    new_file_name = f'ERA-{month()}-CindrićIvan.{era_file_path.suffix}'
+    os.rename(era_file_path,
+              downloads_dir / new_file_name)
+
+
+def modify_file(era_file_path):
     era_file = openpyxl.load_workbook(era_file_path)
 
     lookup_sheet = era_file['Lookup']
@@ -27,6 +39,7 @@ def main():
     paste_dates(days_indices, lookup_sheet, work_sheet)
     paste_work_hours(work_sheet, no_of_lines)
     paste_projects(work_sheet, no_of_lines)
+
     era_file.save(era_file_path)
 
 
@@ -60,6 +73,7 @@ def paste_dates(days_indices, lookup_sheet, work_sheet):
 def paste_projects(work_sheet, no_of_lines):
     # 'Istraživanje # 90-20-00004/850 # BEYOND # EU',
     # 'Komercijalni # 25-22-00002-850 # Proza Hat IEC 60870-5-104 Secure gateway # KET' # NOQA
+    # 'Imovina # 10-22-00001/850 # Proza HAT EDS # n/a'
     print('How many projects? = ', end='')
     no_of_projects = int(input())
 
@@ -120,6 +134,13 @@ def _find_pos(sheet, column_value):
 def add_to_hundred(no_of_el):
     dividers = sorted(random.sample(range(1, 100), no_of_el - 1))
     return [a - b for a, b in zip(dividers + [100], [0] + dividers)]
+
+
+def month() -> str:
+    today_month = datetime.datetime.now().month
+    return ('_', 'Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj',
+            'Lipanj', 'Srpanj', 'Kolovoz', 'Rujan', 'Listopa', 'Studeni',
+            'Prosinac')[today_month]
 
 
 if __name__ == '__main__':
